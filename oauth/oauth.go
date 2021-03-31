@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinhWalker/store_oauth-go/oauth/errors"
-	"gopkg.in/go-resty/resty.v2"
+	"github.com/go-resty/resty/v2"
 	"net/http"
 	"strconv"
 	"strings"
