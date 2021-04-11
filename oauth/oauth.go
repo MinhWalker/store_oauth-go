@@ -2,8 +2,9 @@ package oauth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/MinhWalker/store_oauth-go/oauth/errors"
+	"github.com/MinhWalker/store_utils-go/rest_errors"
 	"github.com/go-resty/resty/v2"
 	"net/http"
 	"strconv"
@@ -58,7 +59,7 @@ func GetClientId(request *http.Request) int64 {
 	return clientId
 }
 
-func AuthenticateRequest(request *http.Request) *errors.RestErr {
+func AuthenticateRequest(request *http.Request) rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
@@ -72,7 +73,7 @@ func AuthenticateRequest(request *http.Request) *errors.RestErr {
 
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
-		if err.Status == http.StatusNotFound {
+		if err.Status() == http.StatusNotFound {
 			return err
 		}
 		return err
@@ -95,24 +96,24 @@ func cleanRequest(request *http.Request) {
 }
 
 //TODO: Get access token by request to service oauth
-func getAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
+func getAccessToken(accessTokenId string) (*accessToken, rest_errors.RestErr) {
 	response, _ := oauthRestClient.R().Get(fmt.Sprintf("http://localhost:8080/oauth/access_token/%s", accessTokenId))
 
 	if response == nil {
-		return nil, errors.NewInternalServerError("invalid rest client response when trying to get access token!")
+		return nil, rest_errors.NewInternalServerError("invalid rest client response when trying to get access token", errors.New("dsad"))
 	}
 	if response.StatusCode() >= 300 {
-		fmt.Println(response.StatusCode())
-		var restErr errors.RestErr
+		var restErr rest_errors.RestErr
 		if err := json.Unmarshal(response.Body(), &restErr); err != nil {
-			return nil, errors.NewInternalServerError("invalid error interface when trying to get access token!")
+			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", err)
 		}
-		return nil, &restErr
+		return nil, restErr
 	}
 
 	var at accessToken
 	if err := json.Unmarshal(response.Body(), &at); err != nil {
-		return nil, errors.NewInternalServerError("error when trying to unmarshal access token response")
+		return nil, rest_errors.NewInternalServerError("error when trying to unmarshal access token response",
+			errors.New("error processing json"))
 	}
 	return &at, nil
 }
